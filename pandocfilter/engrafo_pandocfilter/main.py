@@ -113,15 +113,25 @@ def insert_table_labels(key, val, fmt, meta):
                     )
 
 
-def insert_equation_labels(key, val, fmt, meta):
+def process_math(key, val, fmt, meta):
     '''
-    Insert equation numbers as strings after equations.
+    Insert equation numbers as strings after equations and convert to Engrafo
+    maths tags.
     '''
-    if key == 'Math':
+    if key != 'Math':
+        return
+
+    # Block-level maths
+    if val[0]['t'] == 'DisplayMath':
         latex = val[1]
+        equation_id = ''
+
+        # Has a label
         match = LABEL_REGEX.search(latex)
         if match:
-            val[1] = val[1].replace(match.group(0), '')
+            # Remove label from latex
+            latex = latex.replace(match.group(0), '')
+
             label = match.group(1)
             index = next_label_index('equation')
 
@@ -131,8 +141,21 @@ def insert_equation_labels(key, val, fmt, meta):
                 abbreviation=None,
                 prepend_name=False
             )
-            return Span(['equation-%d' % index, ['equation'], []],
-                        [Math(*val), Str('(%d)' % index)])
+            equation_id = 'equation-%d' % index
+
+        # HACK: fix lstm-sty
+        latex = latex.replace('\softmax', 'softmax')
+
+        children = [Span(['', ['engrafo-math-inner'], []],
+                    [Str(latex)])]
+        if equation_id:
+            children.append(Span(['', ['engrafo-math-label'], []],
+                                 [Str('(%d)' % index)]))
+        return Span([equation_id, ['engrafo-math-block'], []],
+                    children)
+    # Inline maths
+    elif val[0]['t'] == 'InlineMath':
+        return Span(['', ['engrafo-math-inline'], []], [Str(val[1])])
 
 
 def insert_section_labels(key, val, fmt, meta):
@@ -406,7 +429,7 @@ def main():
             insert_figure_labels,
             insert_table_labels,
             insert_section_labels,
-            insert_equation_labels,
+            process_math,
             make_explicit_figure_captions,
             replace_references,
             inline_footnotes,

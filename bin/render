@@ -15,7 +15,6 @@ let args = [
   "--from", "latex+raw_tex",
   "--to", "html",
   "--standalone",
-  "--mathjax",
   "--filter", "/app/pandocfilter/engrafo_pandocfilter.py",
   "--output", "index.html",
   texFile

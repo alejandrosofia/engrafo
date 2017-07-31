@@ -11,6 +11,7 @@ function render(htmlString) {
   postprocessors.figures(dom);
   postprocessors.headings(dom);
   postprocessors.footnotes(dom);
+  postprocessors.math(dom);
   distill.render(dom, {});
   return jsdom.serializeDocument(dom);
 }
